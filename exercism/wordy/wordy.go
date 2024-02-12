@@ -6,32 +6,76 @@ import (
 	"strings"
 )
 
+type stack []int
+type opsFunc func(stack) bool
+
+func (s stack) Push(v int) stack {
+    var tmp stack
+    tmp = append(s, v)
+    fmt.Printf("Push(%d) -> %v\n", v, tmp)
+    return tmp
+}
+
+func (s stack) Pop() (stack, int) {
+    fmt.Printf("Pop() -> ")
+    l := len(s)
+    fmt.Printf("len=%d, ",l)
+    fmt.Printf("%v, %d\n", s, s[l-1])
+    return  s[:l-1], s[l-1]
+}
+
+func (s stack) Len() (int) {
+    l := len(s)
+    fmt.Printf("Len() -> %d\n",l)
+    return l
+}
+
+func (s stack) Calculate (fun func(int, int)int) (stack,bool) {
+    //ans := fp(3,2)
+    fmt.Printf("Calculate() -> %v\n",s)
+    s, p1 := s.Pop()
+    s, p2 := s.Pop()
+    //push result
+    s = s.Push(fun(p1,p2))
+    fmt.Printf("Calculate: p1: %d, p2: %d, result: %d\n",p1,p2,fun(p1,p2))
+    //s.Print()
+
+    return s,true
+}
+
+func (s stack) Print() {
+    fmt.Printf("Print() -> %v\n",s)
+}
+
 const (
     by string = "by"
     plus string = "plus"
     minus string = "minus"
     multiplied string = "multiplied"
     divided string = "divided"
-    
+    cubed string = "cubed"
+    who string = "who"
 )
 
-func fPlus(stack[]int) int {
-	//pop two items from the stack and push the result
-    len := len(stack)
-    fmt.Printf("fPlus: len %d - %v\n",len,stack)
-    if len < 2 {
-        return 0;
-    }
-    p1 := stack[len-1]
-    p2 := stack[len-2]
-    result := p1 + p2
-    fmt.Printf("fPlus: p1: %d, p2: %d, result: %d\n",p1,p2,result)
+func fPlus(p2, p1 int) int {
+    return (p1 + p2)
+}
 
-    return result
+func fMinus(p2, p1 int) int {
+    return (p1 - p2)
+}
+
+func fMult(p2, p1 int) int {
+    return (p1 * p2)
+}
+
+func fDiv(p2, p1 int) int {
+    return (p1 / p2)
 }
 
 func Answer(question string) (int, bool) {
-    var stack[]int
+    var s stack
+    var f func(int, int)int = nil
 
     question = strings.Trim(strings.ToLower(question),"!?")
     fmt.Printf(": %s\n",question)
@@ -39,23 +83,41 @@ func Answer(question string) (int, bool) {
 		fmt.Println(w)
         i, err := strconv.Atoi(w)
         if err == nil {
-            stack = append(stack,i)
-            fmt.Printf("-> %v\n",stack)
+            s = s.Push(i)
+            //fmt.Printf("-> %v\n",s)
+            if f != nil {
+                var res bool
+                s, res = s.Calculate(f)
+                f = nil
+                if ! res {
+                    return 0, false
+                }
+            }
         } else {
         	switch w {
-                case by:
-            		fmt.Println("=> "+w)
     			case plus:
-        			fmt.Println(" > "+w)
+                	f = fPlus
+                    fmt.Printf(" > %s, %p",w, f)
     			case minus:
-        			fmt.Println(" > "+w)
+                	f = fMinus
+                	fmt.Printf(" > %s, %p",w, f)
     			case multiplied:
-        			fmt.Println(" > "+w)
+                	f = fMult
+                	fmt.Printf(" > %s, %p",w, f)
                 case divided:
-        			fmt.Println(" > "+w)
+                	f = fDiv
+                	fmt.Printf(" > %s, %p",w, f)
+            	case cubed:
+					return 0, false
+                case "who":
+            		return 0, false
     		}
         }
-        
 	}
-	return 5, true
+	
+	s, ret := s.Pop()
+    if ! ret {
+        return 0, false
+    }
+	return ret, true
 }
